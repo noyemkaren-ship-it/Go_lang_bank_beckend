@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <title>GoBank - Профиль</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(102, 126, 234, 0.1) 0%, transparent 50%);
+            animation: rotate 30s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            max-width: 550px;
+            width: 100%;
+            animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        h1 {
+            color: white;
+            font-size: 2em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .welcome {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .welcome span {
+            color: white;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.9em;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 25px;
+            padding: 35px;
+            margin-bottom: 35px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .balance-card::before {
+            content: '₽';
+            position: absolute;
+            bottom: -20px;
+            right: -10px;
+            font-size: 150px;
+            opacity: 0.05;
+            font-weight: 800;
+        }
+
+        .balance-label {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            font-weight: 600;
+        }
+
+        .balance-amount {
+            font-size: 4em;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            line-height: 1;
+        }
+
+        .balance-amount span {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 5px 15px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+        }
+
+        .currency {
+            font-size: 0.4em;
+            opacity: 0.7;
+            font-weight: 600;
+        }
+
+        .action-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 14px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.6);
+            border: none;
+            border-radius: 15px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .action-section {
+            margin-bottom: 25px;
+            display: none;
+        }
+
+        .action-section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
+        .quick-amounts {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .quick-btn {
+            padding: 10px 18px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+
+        .quick-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.02);
+        }
+
+        .form-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-wrapper::before {
+            content: '₽';
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            z-index: 1;
+        }
+
+        input {
+            width: 100%;
+            padding: 16px 18px 16px 45px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            font-size: 1em;
+            font-weight: 500;
+            color: white;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.2);
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 400;
+        }
+
+        button[type="submit"] {
+            padding: 16px 28px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 18px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            white-space: nowrap;
+        }
+
+        button[type="submit"]:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        button[type="submit"]:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button[type="submit"]:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .withdraw-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 10px 25px rgba(245, 87, 108, 0.3);
+        }
+
+        .withdraw-btn:hover:not(:disabled) {
+            box-shadow: 0 15px 30px rgba(245, 87, 108, 0.4);
+        }
+
+        #message {
+            padding: 14px 18px;
+            border-radius: 15px;
+            margin-top: 20px;
+            font-weight: 500;
+            animation: fadeIn 0.3s;
+            backdrop-filter: blur(10px);
+        }
+
+        .success {
+            background: rgba(46, 213, 115, 0.15);
+            border: 1px solid rgba(46, 213, 115, 0.3);
+            color: #2ed573;
+        }
+
+        .error {
+            background: rgba(255, 71, 87, 0.15);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding-top: 25px;
+            margin-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .refresh-link {
+            cursor: pointer;
+        }
+
+        .balance-updated {
+            animation: pulse 0.4s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">🏦</div>
+            <h1>GoBank</h1>
+        </div>
+        
+        <div class="welcome">
+            👋 Привет, <span>{{ .Name }}</span>!
+        </div>
+        
+        <div class="balance-card">
+            <div class="balance-label">Ваш баланс</div>
+            <div class="balance-amount">
+                <span id="balance">{{ .Balance }}</span>
+                <span class="currency">RUB</span>
+            </div>
+        </div>
+        
+        <div class="action-tabs">
+            <button class="tab-btn active" onclick="switchTab('deposit')">💰 Пополнить</button>
+            <button class="tab-btn" onclick="switchTab('withdraw')">💸 Вывести</button>
+        </div>
+        
+        <!-- ПОПОЛНЕНИЕ -->
+        <div id="depositSection" class="action-section active">
+            <h2>Пополнение счёта</h2>
+            
+            <div class="quick-amounts">
+                <button type="button" class="quick-btn" onclick="setDepositAmount(100)">+100 ₽</button>
+                <button type="button" class="quick-btn" onclick="setDepositAmount(500)">+500 ₽</button>
+                <button type="button" class="quick-btn" onclick="setDepositAmount(1000)">+1 000 ₽</button>
+                <button type="button" class="quick-btn" onclick="setDepositAmount(5000)">+5 000 ₽</button>
+            </div>
+            
+            <form id="depositForm">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input type="number" id="amount" placeholder="Сумма пополнения" min="1" required>
+                    </div>
+                    <button type="submit" id="depositBtn">Пополнить</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- ВЫВОД СРЕДСТВ -->
+        <div id="withdrawSection" class="action-section">
+            <h2>Вывод средств</h2>
+            
+            <div class="quick-amounts">
+                <button type="button" class="quick-btn" onclick="setWithdrawAmount(100)">−100 ₽</button>
+                <button type="button" class="quick-btn" onclick="setWithdrawAmount(500)">−500 ₽</button>
+                <button type="button" class="quick-btn" onclick="setWithdrawAmount(1000)">−1 000 ₽</button>
+            </div>
+            
+            <form id="withdrawForm">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <input type="number" id="withdrawAmount" placeholder="Сумма вывода" min="1" required>
+                    </div>
+                    <button type="submit" id="withdrawBtn" class="withdraw-btn">Вывести</button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div class="nav-links">
+            <a href="/">🏠 Главная</a>
+            <a class="refresh-link" onclick="refreshBalance(); return false;">🔄 Обновить</a>
+            <a href="/logout">🚪 Выйти</a>
+        </div>
+    </div>
+
+    <script>
+        let currentBalance = {{ .Balance }};
+        let currentTab = 'deposit';
+        
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.action-section').forEach(section => section.classList.remove('active'));
+            
+            if (tab === 'deposit') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('depositSection').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('withdrawSection').classList.add('active');
+            }
+            
+            document.getElementById('message').textContent = '';
+            document.getElementById('message').className = '';
+        }
+        
+        function setDepositAmount(value) {
+            document.getElementById('amount').value = value;
+        }
+        
+        function setWithdrawAmount(value) {
+            document.getElementById('withdrawAmount').value = value;
+        }
+        
+        function showMessage(text, isSuccess) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = isSuccess ? 'success' : 'error';
+            
+            if (isSuccess) {
+                setTimeout(() => {
+                    messageEl.textContent = '';
+                    messageEl.className = '';
+                }, 4000);
+            }
+        }
+        
+        async function refreshBalance() {
+            try {
+                const response = await fetch(`/get_balance?name={{ .Name }}`);
+                const text = await response.text();
+                const match = text.match(/\d+/);
+                if (match) {
+                    const newBalance = parseInt(match[0]);
+                    if (newBalance !== currentBalance) {
+                        currentBalance = newBalance;
+                        const balanceEl = document.getElementById('balance');
+                        balanceEl.textContent = currentBalance.toLocaleString();
+                        balanceEl.classList.add('balance-updated');
+                        setTimeout(() => balanceEl.classList.remove('balance-updated'), 400);
+                    } else {
+                        currentBalance = newBalance;
+                        document.getElementById('balance').textContent = currentBalance.toLocaleString();
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка обновления баланса:', error);
+            }
+        }
+        
+        // ПОПОЛНЕНИЕ
+        document.getElementById('depositForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const amountInput = document.getElementById('amount');
+            const amount = parseInt(amountInput.value);
+            const depositBtn = document.getElementById('depositBtn');
+            
+            if (amount < 1) {
+                showMessage('❌ Сумма должна быть больше 0', false);
+                return;
+            }
+            
+            depositBtn.disabled = true;
+            depositBtn.textContent = '⏳';
+            
+            try {
+                const response = await fetch(`/deposit?name={{ .Name }}&deposit=${amount}`);
+                const result = await response.text();
+                
+                if (result && !isNaN(result)) {
+                    await refreshBalance();
+                    showMessage(`✅ Счёт пополнен на ${amount.toLocaleString()} ₽`, true);
+                    amountInput.value = '';
+                } else {
+                    showMessage('❌ Ошибка при пополнении', false);
+                }
+            } catch (error) {
+                showMessage('❌ Ошибка соединения', false);
+            } finally {
+                depositBtn.disabled = false;
+                depositBtn.textContent = 'Пополнить';
+            }
+        });
+        
+        // ВЫВОД СРЕДСТВ (ИСПРАВЛЕНО)
+        document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const amountInput = document.getElementById('withdrawAmount');
+            const amount = parseInt(amountInput.value);
+            const withdrawBtn = document.getElementById('withdrawBtn');
+            
+            if (amount < 1) {
+                showMessage('❌ Сумма должна быть больше 0', false);
+                return;
+            }
+            
+            if (amount > currentBalance) {
+                showMessage(`❌ Недостаточно средств. Доступно: ${currentBalance.toLocaleString()} ₽`, false);
+                return;
+            }
+            
+            withdrawBtn.disabled = true;
+            withdrawBtn.textContent = '⏳';
+            
+            try {
+                const response = await fetch(`/withdraw?name={{ .Name }}&deposit=${amount}`);
+                const result = await response.text();
+                const newBalance = parseInt(result);
+                
+                // 🔧 ПРОВЕРЯЕМ, ЧТО БАЛАНС ИЗМЕНИЛСЯ (УМЕНЬШИЛСЯ)
+                if (!isNaN(newBalance) && newBalance < currentBalance) {
+                    await refreshBalance();
+                    showMessage(`✅ Выведено ${amount.toLocaleString()} ₽`, true);
+                    amountInput.value = '';
+                } else if (!isNaN(newBalance) && newBalance === currentBalance) {
+                    // Баланс не изменился - значит ошибка на сервере
+                    showMessage(`❌ Не удалось вывести средства. Попробуйте позже.`, false);
+                } else {
+                    showMessage('❌ Ошибка при выводе', false);
+                }
+            } catch (error) {
+                showMessage('❌ Ошибка соединения', false);
+            } finally {
+                withdrawBtn.disabled = false;
+                withdrawBtn.textContent = 'Вывести';
+            }
+        });
+        
+        // Обработка Enter в полях ввода
+        document.getElementById('amount').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('depositBtn').click();
+            }
+        });
+        
+        document.getElementById('withdrawAmount').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('withdrawBtn').click();
+            }
+        });
+        
+        // Форматирование баланса при загрузке
+        document.getElementById('balance').textContent = currentBalance.toLocaleString();
+        
+        refreshBalance();
+        setInterval(refreshBalance, 30000);
+    </script>
+</body>
+</html>
