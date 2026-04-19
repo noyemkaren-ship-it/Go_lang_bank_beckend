@@ -166,25 +166,27 @@
 
         .action-tabs {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 25px;
             background: rgba(255, 255, 255, 0.05);
             padding: 6px;
             border-radius: 20px;
             backdrop-filter: blur(10px);
+            flex-wrap: wrap;
         }
 
         .tab-btn {
             flex: 1;
-            padding: 14px;
+            padding: 12px 8px;
             background: transparent;
             color: rgba(255, 255, 255, 0.6);
             border: none;
             border-radius: 15px;
-            font-size: 1em;
+            font-size: 0.9em;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
+            white-space: nowrap;
         }
 
         .tab-btn.active {
@@ -250,6 +252,13 @@
 
         .form-group {
             display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .input-row {
+            display: flex;
             gap: 12px;
         }
 
@@ -267,6 +276,18 @@
             color: rgba(255, 255, 255, 0.5);
             font-weight: 600;
             z-index: 1;
+        }
+
+        .input-wrapper-user::before {
+            content: '👤';
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 600;
+            z-index: 1;
+            font-size: 14px;
         }
 
         input {
@@ -327,8 +348,9 @@
             box-shadow: 0 10px 25px rgba(245, 87, 108, 0.3);
         }
 
-        .withdraw-btn:hover:not(:disabled) {
-            box-shadow: 0 15px 30px rgba(245, 87, 108, 0.4);
+        .transfer-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
         }
 
         #message {
@@ -419,6 +441,7 @@
         <div class="action-tabs">
             <button class="tab-btn active" onclick="switchTab('deposit')">💰 Пополнить</button>
             <button class="tab-btn" onclick="switchTab('withdraw')">💸 Вывести</button>
+            <button class="tab-btn" onclick="switchTab('transfer')">🔄 Перевод</button>
         </div>
         
         <!-- ПОПОЛНЕНИЕ -->
@@ -462,6 +485,23 @@
             </form>
         </div>
         
+        <!-- ПЕРЕВОД -->
+        <div id="transferSection" class="action-section">
+            <h2>Перевод средств</h2>
+            
+            <form id="transferForm">
+                <div class="form-group">
+                    <div class="input-wrapper-user">
+                        <input type="text" id="recipientName" placeholder="Имя получателя" required>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="number" id="transferAmount" placeholder="Сумма перевода" min="1" required>
+                    </div>
+                    <button type="submit" id="transferBtn" class="transfer-btn">Перевести</button>
+                </div>
+            </form>
+        </div>
+        
         <div id="message"></div>
         
         <div class="nav-links">
@@ -482,11 +522,14 @@
             document.querySelectorAll('.action-section').forEach(section => section.classList.remove('active'));
             
             if (tab === 'deposit') {
-                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
                 document.getElementById('depositSection').classList.add('active');
-            } else {
-                document.querySelector('.tab-btn:last-child').classList.add('active');
+            } else if (tab === 'withdraw') {
+                document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
                 document.getElementById('withdrawSection').classList.add('active');
+            } else if (tab === 'transfer') {
+                document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+                document.getElementById('transferSection').classList.add('active');
             }
             
             document.getElementById('message').textContent = '';
@@ -572,7 +615,7 @@
             }
         });
         
-        // ВЫВОД СРЕДСТВ (ИСПРАВЛЕНО)
+        // ВЫВОД СРЕДСТВ
         document.getElementById('withdrawForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -598,14 +641,10 @@
                 const result = await response.text();
                 const newBalance = parseInt(result);
                 
-                // 🔧 ПРОВЕРЯЕМ, ЧТО БАЛАНС ИЗМЕНИЛСЯ (УМЕНЬШИЛСЯ)
                 if (!isNaN(newBalance) && newBalance < currentBalance) {
                     await refreshBalance();
                     showMessage(`✅ Выведено ${amount.toLocaleString()} ₽`, true);
                     amountInput.value = '';
-                } else if (!isNaN(newBalance) && newBalance === currentBalance) {
-                    // Баланс не изменился - значит ошибка на сервере
-                    showMessage(`❌ Не удалось вывести средства. Попробуйте позже.`, false);
                 } else {
                     showMessage('❌ Ошибка при выводе', false);
                 }
@@ -617,7 +656,60 @@
             }
         });
         
-        // Обработка Enter в полях ввода
+        // ПЕРЕВОД СРЕДСТВ
+        document.getElementById('transferForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const recipientInput = document.getElementById('recipientName');
+            const amountInput = document.getElementById('transferAmount');
+            const recipient = recipientInput.value.trim();
+            const amount = parseInt(amountInput.value);
+            const transferBtn = document.getElementById('transferBtn');
+            
+            if (!recipient) {
+                showMessage('❌ Укажите имя получателя', false);
+                return;
+            }
+            
+            if (recipient === '{{ .Name }}') {
+                showMessage('❌ Нельзя переводить самому себе', false);
+                return;
+            }
+            
+            if (amount < 1) {
+                showMessage('❌ Сумма должна быть больше 0', false);
+                return;
+            }
+            
+            if (amount > currentBalance) {
+                showMessage(`❌ Недостаточно средств. Доступно: ${currentBalance.toLocaleString()} ₽`, false);
+                return;
+            }
+            
+            transferBtn.disabled = true;
+            transferBtn.textContent = '⏳';
+            
+            try {
+                const response = await fetch(`/transfer?name={{ .Name }}&name1=${encodeURIComponent(recipient)}&sum=${amount}`);
+                const text = await response.text();
+                
+                if (text.includes('Перевод выполнен')) {
+                    await refreshBalance();
+                    showMessage(`✅ Переведено ${amount.toLocaleString()} ₽ пользователю ${recipient}`, true);
+                    recipientInput.value = '';
+                    amountInput.value = '';
+                } else {
+                    showMessage(`❌ ${text}`, false);
+                }
+            } catch (error) {
+                showMessage('❌ Ошибка соединения', false);
+            } finally {
+                transferBtn.disabled = false;
+                transferBtn.textContent = 'Перевести';
+            }
+        });
+        
+        // Обработка Enter
         document.getElementById('amount').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -632,9 +724,14 @@
             }
         });
         
-        // Форматирование баланса при загрузке
-        document.getElementById('balance').textContent = currentBalance.toLocaleString();
+        document.getElementById('transferAmount').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('transferBtn').click();
+            }
+        });
         
+        document.getElementById('balance').textContent = currentBalance.toLocaleString();
         refreshBalance();
         setInterval(refreshBalance, 30000);
     </script>

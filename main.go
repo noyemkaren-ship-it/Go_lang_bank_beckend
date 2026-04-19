@@ -176,6 +176,56 @@ func main() {
 		fmt.Fprint(w, "Не удалось войти")
 	})
 
+	http.HandleFunc("/transfer", func(w http.ResponseWriter, r *http.Request) {
+		log("перевод")
+		name := r.URL.Query().Get("name")
+		name1 := r.URL.Query().Get("name1")
+		sumStr := r.URL.Query().Get("sum")
+
+		sum, err := strconv.Atoi(sumStr)
+		if err != nil {
+			fmt.Fprint(w, "Сумма должна быть числом")
+			return
+		}
+
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
+			return
+		}
+
+		if cookie.Value != name {
+			fmt.Fprint(w, "Доступ запрещён")
+			return
+		}
+
+		if name == name1 {
+			fmt.Fprint(w, "Нельзя переводить самому себе")
+			return
+		}
+
+		if GetUserName(name1) == "" {
+			fmt.Fprint(w, "Пользователь не найден")
+			return
+		}
+
+		if GetBalance(name) < 1000 {
+			fmt.Fprint(w, "Недостаточно средств")
+			return
+		}
+
+		if GetUserName(name) == "" {
+			fmt.Fprint(w, "Пользователь не найден")
+			return
+		}
+
+		BankWithdraw(name, sum)
+		BankDeposit(name1, sum)
+
+		fmt.Fprint(w, "Перевод выполнен")
+
+	})
+
 	http.HandleFunc("/deposit", func(w http.ResponseWriter, r *http.Request) {
 		log("депозит")
 		name := r.URL.Query().Get("name")
