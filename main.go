@@ -22,7 +22,7 @@ func generateToken() string {
 var db *sql.DB
 
 func log(name string) {
-	fmt.Println("Совершен вход в ", name)
+	fmt.Println("login completed in ", name)
 }
 
 func InitDB() {
@@ -152,7 +152,7 @@ func main() {
 	})
 
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		log("регистрацию")
+		log("register")
 		name := r.URL.Query().Get("name")
 		password := r.URL.Query().Get("password")
 
@@ -177,7 +177,7 @@ func main() {
 	})
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-		log("логин")
+		log("login")
 		name := r.URL.Query().Get("name")
 		password := r.URL.Query().Get("password")
 		if Login(name, password) {
@@ -199,6 +199,7 @@ func main() {
 	})
 
 	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		log("logout")
 		cookie, err := r.Cookie("token")
 		if err == nil {
 			db.Exec(`UPDATE users SET token = NULL WHERE token = ?`, cookie.Value)
@@ -216,7 +217,7 @@ func main() {
 	})
 
 	http.HandleFunc("/transfer", func(w http.ResponseWriter, r *http.Request) {
-		log("перевод")
+		log("transfer")
 		name1 := r.URL.Query().Get("name1")
 		sumStr := r.URL.Query().Get("sum")
 
@@ -260,7 +261,7 @@ func main() {
 	})
 
 	http.HandleFunc("/deposit", func(w http.ResponseWriter, r *http.Request) {
-		log("депозит")
+		log("deposit")
 		depositStr := r.URL.Query().Get("deposit")
 
 		deposit, err := strconv.Atoi(depositStr)
@@ -312,7 +313,7 @@ func main() {
 	})
 
 	http.HandleFunc("/get_balance", func(w http.ResponseWriter, r *http.Request) {
-		log("баланс")
+		log("balance")
 
 		cookie, err := r.Cookie("token")
 		if err != nil {
@@ -331,19 +332,19 @@ func main() {
 	})
 
 	http.HandleFunc("/register-page", func(w http.ResponseWriter, r *http.Request) {
-		log("страницу регистрации")
+		log("register page")
 		tmpl := template.Must(template.ParseFiles("./static/register.html"))
 		tmpl.Execute(w, nil)
 	})
 
 	http.HandleFunc("/login-page", func(w http.ResponseWriter, r *http.Request) {
-		log("страницу входа")
+		log("login page")
 		tmpl := template.Must(template.ParseFiles("./static/login.html"))
 		tmpl.Execute(w, nil)
 	})
 
 	http.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
-		log("профиль")
+		log("profile")
 
 		cookie, err := r.Cookie("token")
 		if err != nil {
@@ -375,6 +376,6 @@ func main() {
 		tmpl.Execute(w, data)
 	})
 
-	fmt.Println("Сервер запущен на http://localhost:8080")
+	fmt.Println("Server in http://46.253.132.225:8080")
 	http.ListenAndServe(":8080", nil)
 }
