@@ -1,14 +1,23 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	_ "modernc.org/sqlite"
 )
+
+func generateToken() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
 
 var db *sql.DB
 
@@ -18,7 +27,7 @@ func log(name string) {
 
 func InitDB() {
 	var err error
-	db, err = sql.Open("sqlite", "./test.db")
+	db, err = sql.Open("sqlite", "./users.db")
 	if err != nil {
 		panic(err)
 	}
@@ -27,7 +36,8 @@ func InitDB() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE,
         password TEXT,
-        balance INTEGER DEFAULT 0
+        balance INTEGER DEFAULT 0,
+        token TEXT UNIQUE
     )`)
 }
 
@@ -60,6 +70,12 @@ func GetUserName(name string) string {
 	var dbName string
 	db.QueryRow(`SELECT name FROM users WHERE name = ?`, name).Scan(&dbName)
 	return dbName
+}
+
+func GetUserByToken(token string) (string, error) {
+	var name string
+	err := db.QueryRow(`SELECT name FROM users WHERE token = ?`, token).Scan(&name)
+	return name, err
 }
 
 func RegisterFunction(name, password string) error {
@@ -109,13 +125,13 @@ func BankWithdraw(name string, withdraw int) int {
 	}
 
 	if currentBalance < totalDeduction {
-		fmt.Printf("❌ Недостаточно средств! Баланс: %d, требуется: %d\n", currentBalance, totalDeduction)
-		return currentBalance // Возвращаем текущий баланс без изменений
+		fmt.Printf("Недостаточно средств! Баланс: %d, требуется: %d\n", currentBalance, totalDeduction)
+		return currentBalance
 	}
 
 	db.Exec(`UPDATE users SET balance = balance - ? WHERE name = ?`, totalDeduction, name)
 
-	fmt.Printf("✅ %s вывел %d, спишется %d\n", name, withdraw, totalDeduction)
+	fmt.Printf("%s вывел %d, спишется %d\n", name, withdraw, totalDeduction)
 
 	return GetBalance(name)
 }
@@ -146,9 +162,12 @@ func main() {
 			return
 		}
 
+		token := generateToken()
+		db.Exec(`UPDATE users SET token = ? WHERE name = ?`, token, name)
+
 		cookie := &http.Cookie{
 			Name:     "token",
-			Value:    name,
+			Value:    token,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
 			Path:     "/",
@@ -162,9 +181,12 @@ func main() {
 		name := r.URL.Query().Get("name")
 		password := r.URL.Query().Get("password")
 		if Login(name, password) {
+			token := generateToken()
+			db.Exec(`UPDATE users SET token = ? WHERE name = ?`, token, name)
+
 			cookie := &http.Cookie{
 				Name:     "token",
-				Value:    name,
+				Value:    token,
 				HttpOnly: true,
 				SameSite: http.SameSiteLaxMode,
 				Path:     "/",
@@ -176,9 +198,25 @@ func main() {
 		fmt.Fprint(w, "Не удалось войти")
 	})
 
+	http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("token")
+		if err == nil {
+			db.Exec(`UPDATE users SET token = NULL WHERE token = ?`, cookie.Value)
+		}
+
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    "",
+			Expires:  time.Now().Add(-1 * time.Hour),
+			HttpOnly: true,
+			Path:     "/",
+		})
+
+		http.Redirect(w, r, "/", http.StatusFound)
+	})
+
 	http.HandleFunc("/transfer", func(w http.ResponseWriter, r *http.Request) {
 		log("перевод")
-		name := r.URL.Query().Get("name")
 		name1 := r.URL.Query().Get("name1")
 		sumStr := r.URL.Query().Get("sum")
 
@@ -194,8 +232,9 @@ func main() {
 			return
 		}
 
-		if cookie.Value != name {
-			fmt.Fprint(w, "Доступ запрещён")
+		name, err := GetUserByToken(cookie.Value)
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
 			return
 		}
 
@@ -205,17 +244,12 @@ func main() {
 		}
 
 		if GetUserName(name1) == "" {
-			fmt.Fprint(w, "Пользователь не найден")
+			fmt.Fprint(w, "Получатель не найден")
 			return
 		}
 
-		if GetBalance(name) < 1000 {
+		if GetBalance(name) < sum {
 			fmt.Fprint(w, "Недостаточно средств")
-			return
-		}
-
-		if GetUserName(name) == "" {
-			fmt.Fprint(w, "Пользователь не найден")
 			return
 		}
 
@@ -223,17 +257,27 @@ func main() {
 		BankDeposit(name1, sum)
 
 		fmt.Fprint(w, "Перевод выполнен")
-
 	})
 
 	http.HandleFunc("/deposit", func(w http.ResponseWriter, r *http.Request) {
 		log("депозит")
-		name := r.URL.Query().Get("name")
 		depositStr := r.URL.Query().Get("deposit")
 
 		deposit, err := strconv.Atoi(depositStr)
 		if err != nil {
 			fmt.Fprint(w, "Сумма должна быть числом")
+			return
+		}
+
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
+			return
+		}
+
+		name, err := GetUserByToken(cookie.Value)
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
 			return
 		}
 
@@ -243,22 +287,13 @@ func main() {
 
 	http.HandleFunc("/withdraw", func(w http.ResponseWriter, r *http.Request) {
 		log("withdraw")
-		name := r.URL.Query().Get("name")
 		withdrawStr := r.URL.Query().Get("deposit")
 
-		deposit, err := strconv.Atoi(withdrawStr)
+		withdraw, err := strconv.Atoi(withdrawStr)
 		if err != nil {
 			fmt.Fprint(w, "Сумма должна быть числом")
 			return
 		}
-
-		result := BankWithdraw(name, deposit)
-		fmt.Fprint(w, result)
-	})
-
-	http.HandleFunc("/get_balance", func(w http.ResponseWriter, r *http.Request) {
-		log("баланс")
-		name := r.URL.Query().Get("name")
 
 		cookie, err := r.Cookie("token")
 		if err != nil {
@@ -266,8 +301,28 @@ func main() {
 			return
 		}
 
-		if cookie.Value != name {
-			fmt.Fprint(w, "Доступ запрещён")
+		name, err := GetUserByToken(cookie.Value)
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
+			return
+		}
+
+		result := BankWithdraw(name, withdraw)
+		fmt.Fprint(w, result)
+	})
+
+	http.HandleFunc("/get_balance", func(w http.ResponseWriter, r *http.Request) {
+		log("баланс")
+
+		cookie, err := r.Cookie("token")
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
+			return
+		}
+
+		name, err := GetUserByToken(cookie.Value)
+		if err != nil {
+			fmt.Fprint(w, "Не авторизован")
 			return
 		}
 
@@ -276,13 +331,13 @@ func main() {
 	})
 
 	http.HandleFunc("/register-page", func(w http.ResponseWriter, r *http.Request) {
-		log("регистрацию")
+		log("страницу регистрации")
 		tmpl := template.Must(template.ParseFiles("./static/register.html"))
 		tmpl.Execute(w, nil)
 	})
 
 	http.HandleFunc("/login-page", func(w http.ResponseWriter, r *http.Request) {
-		log("логин")
+		log("страницу входа")
 		tmpl := template.Must(template.ParseFiles("./static/login.html"))
 		tmpl.Execute(w, nil)
 	})
@@ -292,22 +347,20 @@ func main() {
 
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusFound)
+			http.Redirect(w, r, "/login-page", http.StatusFound)
 			return
 		}
 
-		name := cookie.Value
+		name, err := GetUserByToken(cookie.Value)
+		if err != nil {
+			http.Redirect(w, r, "/login-page", http.StatusFound)
+			return
+		}
 
 		var balance int
 		err = db.QueryRow(`SELECT balance FROM users WHERE name = ?`, name).Scan(&balance)
 		if err != nil {
 			balance = 0
-		}
-
-		if name == "" {
-			tmpl := template.Must(template.ParseFiles("./static/error.html"))
-			tmpl.Execute(w, nil)
-			return
 		}
 
 		data := struct {
